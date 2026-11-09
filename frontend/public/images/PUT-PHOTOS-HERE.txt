@@ -1,0 +1,11 @@
+Drop your product photos in this folder. That's it.
+
+Name each photo after its product, in lowercase with dashes:
+  iPhone 11 128GB          ->  iphone-11-128gb.jpg
+  HP EliteBook 840 G7      ->  hp-elitebook-840-g7.jpg
+  AirPods Pro 2nd Gen      ->  airpods-pro-2nd-gen.jpg
+
+.jpg, .jpeg, .png, .webp and .avif all work.
+Run "npm run photos" in the frontend folder to list the exact file name every product expects.
+Tip: resize photos to about 800 px wide (under 200 KB) so the site loads fast on mobile data.
+Restart "npm run dev" (or refresh after a rebuild) to see new photos.
