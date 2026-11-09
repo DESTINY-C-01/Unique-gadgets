@@ -58,3 +58,20 @@ fr:{bar:"Livraison gratuite à Cotonou dès 150 000 FCFA d’achat",n1:"Boutique
 
 Object.assign(T.en, { err: "Sorry, we could not send your order. Please try again or message us on WhatsApp.", fn: "Your name", fp: "Phone number", ft: "Delivery town" });
 Object.assign(T.fr, { err: "Désolé, impossible d’envoyer la commande. Réessayez ou écrivez-nous sur WhatsApp.", fn: "Votre nom", fp: "Numéro de téléphone", ft: "Ville de livraison" });
+
+Object.assign(T.en, {
+  h1b: "Phones, laptops and gadgets. Tested, fairly priced, delivered across Benin.",
+  hpb: "Search below, tap Order on WhatsApp, and we confirm everything with you.",
+  st1: "Choose", st2: "Order on WhatsApp", st3: "Pay and receive",
+  sort: "Sort", snew: "Newest", slo: "Price: low to high", shi: "Price: high to low", found: "products", bs: "Best seller",
+  loading: "Loading products...", wake: "The shop is waking up. The first visit can take up to a minute, please wait.",
+  failed: "We could not load the products.", retry: "Try again", hint: "Tap Order on WhatsApp to buy now, or Add to cart to order several items."
+});
+Object.assign(T.fr, {
+  h1b: "Téléphones, ordinateurs et gadgets. Testés, à bon prix, livrés partout au Bénin.",
+  hpb: "Cherchez ci-dessous, appuyez sur Commander sur WhatsApp, et nous confirmons tout avec vous.",
+  st1: "Choisissez", st2: "Commandez sur WhatsApp", st3: "Payez et recevez",
+  sort: "Trier", snew: "Plus récents", slo: "Prix croissant", shi: "Prix décroissant", found: "produits", bs: "Meilleure vente",
+  loading: "Chargement des produits...", wake: "La boutique se réveille. La première visite peut prendre jusqu’à une minute, merci de patienter.",
+  failed: "Impossible de charger les produits.", retry: "Réessayer", hint: "Appuyez sur Commander sur WhatsApp pour acheter tout de suite, ou Ajouter au panier pour plusieurs articles."
+});

@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { T } from "@/lib/i18n";
 import { API, Product, fmt, img } from "@/lib/api";
 import { BRAND, CITY, FREE, PHONE, REVIEWS, SOCIAL, WA } from "@/lib/config";
@@ -8,10 +8,13 @@ const CATS = ["all", "pho", "lap", "desk", "gad", "acc"];
 const EM: Record<string, string> = { all: "🛍️", pho: "📱", lap: "💻", desk: "🖥️", gad: "🎧", acc: "🔌" };
 type Line = { id: string; name: string; price: number; qty: number };
 
-export default function Storefront({ products }: { products: Product[] }) {
+export default function Storefront({ products: initial, failed }: { products: Product[]; failed: boolean }) {
+  const [products, setProducts] = useState(initial);
+  const [loading, setLoading] = useState(failed && initial.length === 0);
   const [lang, setLang] = useState<"en" | "fr">("en");
   const [cat, setCat] = useState("all");
   const [q, setQ] = useState("");
+  const [sort, setSort] = useState("new");
   const [cart, setCart] = useState<Line[]>([]);
   const [open, setOpen] = useState(false);
   const [f, setF] = useState({ name: "", phone: "", town: "" });
@@ -19,12 +22,46 @@ export default function Storefront({ products }: { products: Product[] }) {
   const [err, setErr] = useState("");
   const t = T[lang];
 
+  // Use the visitor's saved language, or French if their phone is set to French.
+  useEffect(() => {
+    try {
+      const s = localStorage.getItem("ug_lang");
+      if (s === "fr" || s === "en") setLang(s);
+      else if (navigator.language.toLowerCase().startsWith("fr")) setLang("fr");
+    } catch {}
+  }, []);
+  function switchLang() {
+    const n = lang === "en" ? "fr" : "en";
+    setLang(n);
+    try { localStorage.setItem("ug_lang", n); } catch {}
+  }
+
+  // If the server was asleep when the page was built, keep trying from the browser.
+  useEffect(() => {
+    if (!failed || initial.length > 0) return;
+    let tries = 0, stop = false;
+    const go = async () => {
+      try {
+        const r = await fetch(`${API}/products`, { cache: "no-store" });
+        if (r.ok) {
+          const d: Product[] = await r.json();
+          if (!stop) { setProducts(d.filter((p) => p.inStock !== false)); setLoading(false); }
+          return;
+        }
+      } catch {}
+      if (stop) return;
+      if (++tries < 24) setTimeout(go, 5000); else setLoading(false);
+    };
+    go();
+    return () => { stop = true; };
+  }, [failed, initial.length]);
+
   const wa = (m: string) => `https://wa.me/${WA}?text=${encodeURIComponent(m)}`;
   const goto = (k: string) => { setCat(k); setQ(""); document.getElementById("shop")?.scrollIntoView({ behavior: "smooth" }); };
-  const shown = useMemo(
-    () => products.filter((p) => (cat === "all" || p.category === cat) && p.name.toLowerCase().includes(q.trim().toLowerCase())),
-    [products, cat, q],
-  );
+  const shown = useMemo(() => {
+    const l = products.filter((p) => (cat === "all" || p.category === cat) && p.name.toLowerCase().includes(q.trim().toLowerCase()));
+    return sort === "lo" ? [...l].sort((a, b) => a.price - b.price) : sort === "hi" ? [...l].sort((a, b) => b.price - a.price) : l;
+  }, [products, cat, q, sort]);
   const total = cart.reduce((s, c) => s + c.price * c.qty, 0);
   const count = cart.reduce((s, c) => s + c.qty, 0);
   const ready = f.name.trim().length > 1 && f.phone.trim().length > 6 && f.town.trim().length > 1;
@@ -60,23 +97,16 @@ export default function Storefront({ products }: { products: Product[] }) {
         {p.oldPrice ? <span className="bd s">{t.save} {fmt(p.oldPrice - p.price)}</span> : null}
         {p.image ? <img src={img(p.image)} alt={p.name} loading="lazy" /> : <span>{p.emoji}</span>}
       </div>
-      <div className="vd">{p.brand}</div>
+      <div className="vd">{p.brand}{p.bestSeller ? ` · ★ ${t.bs}` : ""}</div>
       <h3>{p.name}</h3>
       {p.specs && p.specs.length === 4
         ? <div className="sg">{p.specs.map((v, i) => <div key={i}><b>{v}</b><small>{[t.dsp, t.cpu, t.ram, t.sto][i]}</small></div>)}</div>
         : <p className="sp">{p.description}</p>}
       <div className="pr2">{fmt(p.price)}{p.oldPrice ? <s>{fmt(p.oldPrice)}</s> : null}</div>
-      <button className="btn" onClick={() => add(p)}>{t.add}</button>
+      <a className="btn wab" href={wa(`${t.msg}\n- 1 x ${p.name} (${fmt(p.price)})`)} target="_blank" rel="noopener">{t.wa}</a>
+      <button className="btn o2" onClick={() => add(p)}>{t.add}</button>
     </div>
   );
-
-  const rows: [string, Product[], string][] = [
-    ["r1", products.filter((p) => p.bestSeller), "all"],
-    ["r2", products.filter((p) => p.oldPrice), "all"],
-    ["r3", products.filter((p) => p.category === "pho"), "pho"],
-    ["r4", products.filter((p) => p.category === "gad"), "gad"],
-  ];
-  const popular = (products.filter((p) => p.bestSeller).length ? products.filter((p) => p.bestSeller) : products).slice(0, 3);
 
   return (
     <>
@@ -84,59 +114,43 @@ export default function Storefront({ products }: { products: Product[] }) {
       <header><div className="w">
         <a className="logo" href="#"><img src="/logo-emblem.jpg" alt="" width={50} height={38} /><span>{BRAND}</span></a>
         <nav><a href="#shop">{t.n1}</a><a href="#how">{t.n2}</a><a href="#faq">{t.n3}</a><a href="#contact">{t.n4}</a></nav>
-        <button className="pill" onClick={() => setLang(lang === "en" ? "fr" : "en")} aria-label="Change language">{lang === "en" ? "FR" : "EN"}</button>
-        <a className="pill dsk" href={wa(t.hi)} target="_blank" rel="noopener">{t.wa}</a>
-        <button className="pill cartbtn" onClick={() => setOpen(!open)}>{t.cart} <b>{count}</b></button>
+        <button className="pill" onClick={switchLang} aria-label="Change language">{lang === "en" ? "Français" : "English"}</button>
+        <button className="pill cartbtn" onClick={() => setOpen(!open)}>🛒 {t.cart} <b>{count}</b></button>
       </div></header>
+
+      <div className="hero"><div className="w one">
+        <h1>{t.h1b}</h1>
+        <p>{t.hpb}</p>
+        <div className="sbox"><input type="search" placeholder={"🔍 " + t.ph} aria-label="Search" value={q} onChange={(e) => setQ(e.target.value)} /></div>
+        <div className="st3"><span>① {t.st1}</span><span>② {t.st2}</span><span>③ {t.st3}</span></div>
+        <div className="tk"><span>✅ {t.t1}</span><span>🛡️ {t.t2}</span><span>🚚 {t.t4}</span><span>💳 {t.t3}</span></div>
+      </div></div>
+
       <div className="catbar"><div className="w">
-        {CATS.filter((k) => k !== "all").map((k) => <button key={k} onClick={() => goto(k)}>{t[k]}</button>)}
-      </div></div>
-
-      <div className="hero"><div className="w">
-        <div>
-          <h1>{t.h1}</h1><p>{t.hp}</p>
-          <div className="ctas">
-            <button className="btn" onClick={() => goto("pho")}>{t.c1}</button>
-            <button className="btn o" onClick={() => goto("lap")}>{t.c2}</button>
-          </div>
-        </div>
-        <div className="aside"><h3>{t.pop}</h3>
-          {popular.map((p) => (
-            <div className="row" key={p._id}>
-              <span className="e">{p.emoji}</span>
-              <div><b>{p.name}</b><small>{p.condition === "new" ? t.new : t.tested}</small></div>
-              <span className="pr">{fmt(p.price)}</span>
-            </div>
-          ))}
-        </div>
-      </div></div>
-
-      <div className="trust"><div className="w">
-        <div><i>✅</i><span>{t.t1}</span></div><div><i>🛡️</i><span>{t.t2}</span></div>
-        <div><i>💳</i><span>{t.t3}</span></div><div><i>🚚</i><span>{t.t4}</span></div>
-      </div></div>
-
-      <div className="rows w">
-        {rows.filter((r) => r[1].length).map(([k, list, c]) => (
-          <section key={k}>
-            <div className="hd"><h2>{t[k]}</h2><button className="va" onClick={() => goto(c)}>{t.va} →</button></div>
-            <div className="grid">{list.slice(0, 4).map(card)}</div>
-          </section>
+        {CATS.map((k) => (
+          <button key={k} aria-pressed={cat === k} onClick={() => setCat(k)}>
+            {EM[k]} {t[k]} ({products.filter((p) => k === "all" || p.category === k).length})
+          </button>
         ))}
-      </div>
+      </div></div>
 
-      <section id="shop"><div className="w">
-        <h2>{t.h2}</h2><p className="sub">{t.sub}</p>
-        <div className="cats">
-          {CATS.map((k) => (
-            <button key={k} className="cat" aria-pressed={cat === k} onClick={() => setCat(k)}>
-              <span className="e">{EM[k]}</span><span>{t[k]}</span>
-              <small>{products.filter((p) => k === "all" || p.category === k).length} {t.items}</small>
-            </button>
-          ))}
+      <section id="shop" style={{ paddingTop: 24 }}><div className="w">
+        <div className="tl">
+          <b>{shown.length} {t.found}</b>
+          <label>{t.sort}: <select value={sort} onChange={(e) => setSort(e.target.value)}>
+            <option value="new">{t.snew}</option><option value="lo">{t.slo}</option><option value="hi">{t.shi}</option>
+          </select></label>
         </div>
-        <input className="search" type="search" placeholder={t.ph} aria-label="Search" value={q} onChange={(e) => setQ(e.target.value)} />
-        <div className="grid">{shown.length ? shown.map(card) : <p className="none">{products.length ? t.none : "No products yet. Start the API and run: npm run seed"}</p>}</div>
+        <p className="hint">{t.hint}</p>
+        {loading && <div className="msgbox">{t.loading} {t.wake}</div>}
+        {!loading && !products.length && (
+          <div className="msgbox">{t.failed} <button className="va" onClick={() => window.location.reload()}>{t.retry}</button></div>
+        )}
+        <div className="grid">
+          {loading
+            ? [1, 2, 3, 4].map((i) => <div className="skel" key={i} />)
+            : shown.length ? shown.map(card) : products.length ? <p className="none">{t.none}</p> : null}
+        </div>
       </div></section>
 
       <section className="band"><div className="w">
@@ -150,12 +164,12 @@ export default function Storefront({ products }: { products: Product[] }) {
         </div></section>
       )}
 
-      <section className="band" id="how"><div className="w">
+      <section id="how"><div className="w">
         <h2>{t.h3}</h2><p className="sub">{t.sub3}</p>
         <div className="steps">{[1, 2, 3].map((i) => <div className="step" key={i}><h3>{t[`s${i}h`]}</h3><p>{t[`s${i}p`]}</p></div>)}</div>
       </div></section>
 
-      <section id="faq"><div className="w">
+      <section className="band" id="faq"><div className="w">
         <h2>{t.h4}</h2><p className="sub">{t.sub4}</p>
         {[1, 2, 3, 4].map((i) => <details key={i}><summary>{t[`q${i}`]}</summary><p>{t[`a${i}`]}</p></details>)}
       </div></section>
@@ -205,7 +219,7 @@ export default function Storefront({ products }: { products: Product[] }) {
           </div>
         )}
       </aside>
-      <a className="btn g fab" href={wa(t.hi)} target="_blank" rel="noopener">{t.wa}</a>
+      <a className="btn g fab" href={wa(t.hi)} target="_blank" rel="noopener">💬 {t.wa}</a>
     </>
   );
 }

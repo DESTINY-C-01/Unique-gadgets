@@ -77,3 +77,22 @@ footer a,footer button.fl{display:block;color:var(--mute);background:none;border
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.pt{width:48px;height:48px;object-fit:contain;background:var(--bg);border-radius:6px;display:grid;place-items:center;font-size:24px}
 .ad label{display:flex;gap:8px;align-items:center}.ad .ok{color:var(--sun);font-size:14px}.ad select{width:auto}
 .ph{width:140px;height:105px;object-fit:contain;background:var(--bg);border:1px solid var(--line);border-radius:10px}
+
+/* ---- easier-to-use layout ---- */
+.hero .w.one{display:block;padding-top:34px;padding-bottom:26px}
+.sbox input{width:100%;border:2px solid var(--br);background:var(--sf);color:var(--ink);border-radius:14px;padding:16px 18px;font:500 18px Figtree,sans-serif;margin:4px 0 16px}
+.st3,.tk{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:15px}.st3{margin-bottom:10px;font-weight:600}.tk{color:var(--mute)}
+.catbar{position:sticky;top:calc(64px + env(safe-area-inset-top,0px));z-index:8}
+.catbar button{font-size:16px;min-height:44px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.catbar button[aria-pressed="true"]{background:var(--br);color:var(--brk);border-color:var(--br)}
+.tl{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 14px}
+.tl select{background:var(--sf);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit}
+.hint{color:var(--mute);font-size:14px;margin:0 0 16px}
+.card .btn{min-height:46px;font-size:16px}
+.card .btn.wab{background:#25d366;color:#04210f}
+.card .btn.o2{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.pr2{font-size:24px}
+.skel{height:380px;border-radius:14px;background:linear-gradient(100deg,var(--sf) 30%,#12203a 50%,var(--sf) 70%);background-size:200% 100%;animation:sh 1.4s infinite}
+@keyframes sh{to{background-position:-200% 0}}
+.msgbox{background:var(--sf);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:16px;color:var(--mute)}
+@media (prefers-reduced-motion:reduce){.skel{animation:none}}
